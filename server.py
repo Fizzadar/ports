@@ -8,7 +8,7 @@
 from gevent import monkey
 monkey.patch_all()
 
-from socket import socket, error as socket_error
+import socket
 
 from gevent.pywsgi import WSGIServer
 from flask import Flask, request, jsonify
@@ -34,7 +34,7 @@ def _get_remote_addr():
 def index():
     remote_addr = _get_remote_addr()
 
-    return jsonify(host=remote_addr)
+    return jsonify(host=remote_addr, usage='/<port_number>')
 
 
 @app.route('/<int:port_number>')
@@ -46,15 +46,20 @@ def check_port(port_number):
         'port': port_number
     }
 
-    sock = socket()
+    sock = socket.socket()
     sock.settimeout(settings.TIMEOUT)
+
+    is_open = False
 
     try:
         sock.connect((remote_addr, port_number))
-        data['open'] = True
-    except socket_error as e:
+        is_open = True
+    except socket.timeout:
+        data['error'] = 'Timed out'
+    except socket.error as e:
         data['error'] = e.strerror
-        data['open'] = False
+
+    data['open'] = is_open
 
     return jsonify(**data)
 
