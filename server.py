@@ -32,7 +32,9 @@ def _get_remote_addr():
 
 @app.route('/')
 def index():
-    return 'PORTS'
+    remote_addr = _get_remote_addr()
+
+    return jsonify(host=remote_addr)
 
 
 @app.route('/<int:port_number>')
@@ -49,10 +51,10 @@ def check_port(port_number):
 
     try:
         sock.connect((remote_addr, port_number))
-        data['is_open'] = True
+        data['open'] = True
     except socket_error as e:
-        data['error'] = str(e)
-        data['is_open'] = False
+        data['error'] = e.strerror
+        data['open'] = False
 
     return jsonify(**data)
 
