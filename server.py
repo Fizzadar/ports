@@ -13,7 +13,17 @@ import socket
 from gevent.pywsgi import WSGIServer
 from flask import Flask, request, jsonify
 
-import settings
+import settings_default
+
+try:
+    import settings
+except ImportError:
+    settings = settings_default
+
+# Set any missing default settings
+for attr in [attr for attr in dir(settings_default) if attr.isupper()]:
+    if not hasattr(settings, attr):
+        setattr(settings, attr, getattr(settings_default, attr))
 
 
 app = Flask('ports')
@@ -28,6 +38,13 @@ def _get_remote_addr():
         remote_addr = request.remote_addr
 
     return remote_addr
+
+
+@app.before_request
+def secret_check():
+    if settings.SECRET:
+        if request.args.get('secret') != settings.SECRET:
+            return jsonify(error='Invalid secret, add ?secret')
 
 
 @app.route('/')
